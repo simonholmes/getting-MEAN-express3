@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
-
+console.log("app.get('env')", app.get('env'));
 require('./routes')(app);
 
 http.createServer(app).listen(app.get('port'), function(){
