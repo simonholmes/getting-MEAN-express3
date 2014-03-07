@@ -1,7 +1,6 @@
 var mongoose = require( 'mongoose' );
 var gracefulShutdown;
 var dbURI = 'mongodb://localhost/Loc8r';
-console.log('NODE_ENV', process.env.NODE_ENV);
 if (process.env.NODE_ENV === 'production') {
   dbURI = 'mongodb://heroku_app20110907:4rqhlidfdqq6vgdi06c15jrlpf@ds033669.mongolab.com:33669/heroku_app20110907';
 }
@@ -36,6 +35,12 @@ process.once('SIGUSR2', function () {
 // For app termination
 process.on('SIGINT', function() {
   gracefulShutdown('app termination', function () {
+    process.exit(0);
+  });
+});
+// For Heroku app termination
+process.on('SIGTERM', function() {
+  gracefulShutdown('Heroku app termination', function () {
     process.exit(0);
   });
 });
