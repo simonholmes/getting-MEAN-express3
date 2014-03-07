@@ -1,12 +1,10 @@
 var mongoose = require( 'mongoose' );
 var gracefulShutdown;
-var dbURI = 'mongodb://heroku_app20110907:4rqhlidfdqq6vgdi06c15jrlpf@ds033669.mongolab.com:33669/heroku_app20110907';
+var dbURI = 'mongodb://localhost/Loc8r';
 
-module.exports = function(app){
-  if ('development' != app.get('env')) {
-    dbURI = 'mongodb://localhost/Loc8r';
-  }
-};
+if (process.env.NODE_ENV === 'production') {
+  dbURI = 'mongodb://heroku_app20110907:4rqhlidfdqq6vgdi06c15jrlpf@ds033669.mongolab.com:33669/heroku_app20110907';
+}
 
 mongoose.connect(dbURI);
 

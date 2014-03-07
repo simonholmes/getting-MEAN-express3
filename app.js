@@ -1,8 +1,8 @@
 var express = require('express');
 var http = require('http');
 var path = require('path');
+require('./app_server/models/db');
 var app = express();
-require('./app_server/models/db')(app);
 
 // all environments
 app.set('port', process.env.PORT || 3000);
