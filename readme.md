@@ -8,3 +8,4 @@ Getting MEAN is published by Manning, and is currently available through their e
 There are named branches for the various states of the code throughout the book, so far:
 * `chapter-03` **Chapter 3**: Creating and setting up a MEAN project
 * `chapter-04` **Chapter 4**: Building a static site with Node.js and Express
+* `chapter-05` **Chapter 5**: Building a data model with MongoDB and Mongoose
