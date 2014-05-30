@@ -1,21 +1,32 @@
 var mongoose = require('mongoose');
 var Loc = mongoose.model('Location');
 
-var earthRadius = 6371; // km, miles is 3959
+var theEarth = (function(){
+  var earthRadius = 6371; // km, miles is 3959
 
-var getDistanceFromRads = function(rads) {
-  return parseFloat(rads * earthRadius);
-};
+  var getDistanceFromRads = function(rads) {
+    return parseFloat(rads * earthRadius);
+  };
 
-var getRadsFromDistance = function(distance) {
-  return parseFloat(distance / earthRadius);
-};
+  var getRadsFromDistance = function(distance) {
+    return parseFloat(distance / earthRadius);
+  };
+
+  return {
+    getDistanceFromRads : getDistanceFromRads,
+    getRadsFromDistance : getRadsFromDistance
+  };
+})();
 
 var sendJSONresponse = function(res, status, content) {
   res.status(status);
   res.json(content);
 };
 
+/*module.exports.test = function (req, res) {
+  sendJSONresponse(res, 200, {"status" : "success"});
+};
+*/
 
 /* GET list of locations */
 module.exports.locationsListByDistance = function(req, res) {
@@ -26,49 +37,60 @@ module.exports.locationsListByDistance = function(req, res) {
     type: "Point",
     coordinates: [lng, lat]
   };
-  Loc.geoNear(point, {
-    maxDistance: getRadsFromDistance(maxDistance),
+  var geoOptions = {
     spherical: true,
+    maxDistance: theEarth.getRadsFromDistance(maxDistance),
     num: 10
-  }, function(err, results, stats) {
-    var locationList;
+  };
+  if (!lng || !lat || ! maxDistance) {
+    console.log('locationsListByDistance missing params');
+    sendJSONresponse(res, 404, {"message" : "lng, lat and maxDistance query parameters are all required"});
+    return;
+  }
+  Loc.geoNear(point, geoOptions, function(err, results, stats) {
+    var locations;
     console.log('Geo Results', results);
     console.log('Geo stats', stats);
     if (err) {
       console.log('geoNear error:', err);
-      sendJSONresponse(res, 404, "lookup error");
+      sendJSONresponse(res, 404, err);
     } else {
-      locationList = buildLocationList(req, res, results, stats);
-      sendJSONresponse(res, 200, locationList);
+      locations = buildLocationList(req, res, results, stats);
+      sendJSONresponse(res, 200, locations);
     }
   });
 };
 
 var buildLocationList = function(req, res, results, stats) {
-  var locations = [];
-  results.forEach(function(doc) {
-    locations.push({
-      distance: getDistanceFromRads(doc.dis),
-      name: doc.obj.name,
-      address: doc.obj.address,
-      rating: doc.obj.rating,
-      facilities: doc.obj.facilities,
-      _id: doc.obj._id
-    });
+var locations = [];
+results.forEach(function(doc) {
+  locations.push({
+    distance: theEarth.getDistanceFromRads(doc.dis),
+    name: doc.obj.name,
+    address: doc.obj.address,
+    rating: doc.obj.rating,
+    facilities: doc.obj.facilities,
+    _id: doc.obj._id
   });
+});
   return locations;
 };
 
 /* GET a location by the id */
 module.exports.locationsReadOne = function(req, res) {
   console.log('Finding location details', req.params);
-  if (req.params.locationid) {
+  if (req.params && req.params.locationid) {
     Loc
       .findById(req.params.locationid)
       .exec(function(err, location) {
-        if (err) {
-          console.log('locationid lookup error', err);
-          sendJSONresponse(res, 404, "locationid not found");
+        if (!location) {
+          sendJSONresponse(res, 404, {
+            "message": "locationid not found"
+          });
+          return;
+        } else if (err) {
+          console.log(err);
+          sendJSONresponse(res, 404, err);
           return;
         }
         console.log(location);
@@ -76,7 +98,9 @@ module.exports.locationsReadOne = function(req, res) {
       });
   } else {
     console.log('No locationid specified');
-    sendJSONresponse(res, 404, "No locationid in request");
+    sendJSONresponse(res, 404, {
+      "message": "No locationid in request"
+    });
   }
 };
 
@@ -296,34 +320,51 @@ module.exports.reviewsUpdateOne = function(req, res) {
 
 module.exports.reviewsReadOne = function(req, res) {
   console.log("Getting single review");
-  if (!req.params.locationid || !req.params.reviewid) {
-    sendJSONresponse(res, 404, "Not found, locationid and reviewid are both required");
-    return;
-  }
-  Loc
-    .findById(req.params.locationid)
-    .select('reviews')
-    .exec(
-      function(err, location) {
-        if (!location) {
-          sendJSONresponse(res, 404, "locationid not found");
-          return;
-        } else if (err) {
-          sendJSONresponse(res, 400, err);
-          return;
-        }
-        if (location.reviews && location.reviews.length > 0) {
-          if (!location.reviews.id(req.params.reviewid)) {
-            sendJSONresponse(res, 404, "reviewid not found");
-          } else {
-            sendJSONresponse(res, 200, location.reviews.id(req.params.reviewid));
+  if (req.params && req.params.locationid && req.params.reviewid) {
+    Loc
+      .findById(req.params.locationid)
+      .select('name reviews')
+      .exec(
+        function(err, location) {
+          console.log(location);
+          var response, review;
+          if (!location) {
+            sendJSONresponse(res, 404, {
+              "message": "locationid not found"
+            });
+            return;
+          } else if (err) {
+            sendJSONresponse(res, 400, err);
+            return;
           }
-        } else {
-          sendJSONresponse(res, 404, "No reviews found");
+          if (location.reviews && location.reviews.length > 0) {
+            review = location.reviews.id(req.params.reviewid);
+            if (!review) {
+              sendJSONresponse(res, 404, {
+                "message": "reviewid not found"
+              });
+            } else {
+              response = {
+                location : {
+                  name : location.name,
+                  id : req.params.locationid
+                },
+                review : review
+              };
+              sendJSONresponse(res, 200, response);
+            }
+          } else {
+            sendJSONresponse(res, 404, {
+              "message": "No reviews found"
+            });
+          }
         }
-      }
-  );
-
+    );
+  } else {
+    sendJSONresponse(res, 404, {
+      "message": "Not found, locationid and reviewid are both required"
+    });
+  }
 };
 
 // app.delete('/api/locations/:locationid/reviews/:reviewid'
