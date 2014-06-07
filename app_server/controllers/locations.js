@@ -1,5 +1,41 @@
-/* GET 'home' page */
-module.exports.homelist = function(req, res){
+var http = require('http');
+var apiOptions = {
+  host: 'localhost',
+  port: 3000
+};
+if (process.env.NODE_ENV === 'production') {
+  apiOptions.host = 'getting-mean-loc8r.herokuapp.com';
+  apiOptions.port = 80;
+}
+
+var formatDistance = function (distance) {
+  var numDistance, unit;
+  if (distance > 1) {
+    numDistance = distance.toFixed(1);
+    unit = 'km';
+  } else {
+    numDistance = parseInt(distance * 1000,10);
+    unit = 'm';
+  }
+  return numDistance + unit;
+};
+
+var renderHomepage = function (req, res, locations, err) {
+  var message, locationData, locationCount, i;
+  if (err) {
+    locationData = [];
+    message = "API error: " + err;
+  } else {
+    locationData = locations;
+    locationCount = locationData.length;
+    if (locationCount > 0) {
+      for (i=0; i<locationCount; i++) {
+        locationData[i].distance = formatDistance(locationData[i].distance);
+      }
+    } else {
+      message = "No places found nearby";
+    }
+  }
   res.render('locations-list', {
     title: 'Loc8r - find a place to work with wifi',
     pageHeader: {
@@ -7,26 +43,37 @@ module.exports.homelist = function(req, res){
       strapline: 'Find places to work with wifi near you!'
     },
     sidebar: "Looking for wifi and a seat? Loc8r helps you find places to work when out and about. Perhaps with coffee, cake or a pint? Let Loc8r help you find the place you're looking for.",
-    locations: [{
-      name: 'Starcups',
-      address: '125 High Street, Reading, RG6 1PS',
-      rating: 3,
-      facilities: ['Hot drinks', 'Food', 'Premium wifi'],
-      distance: '100m'
-    },{
-      name: 'Cafe Hero',
-      address: '125 High Street, Reading, RG6 1PS',
-      rating: 4,
-      facilities: ['Hot drinks', 'Food', 'Premium wifi'],
-      distance: '200m'
-    },{
-      name: 'Burger Queen',
-      address: '125 High Street, Reading, RG6 1PS',
-      rating: 2,
-      facilities: ['Food', 'Premium wifi'],
-      distance: '250m'
-    }]
+    locations: locationData,
+    message: message
   });
+
+};
+
+/* GET 'home' page */
+module.exports.homelist = function(req, res){
+  var apiReq;
+  apiOptions.path = '/api/locations?lng=-0.7992599&lat=51.378091&maxDistance=2';
+  apiOptions.method = 'GET';
+  apiReq = http.request(apiOptions, function(apiRes) {
+    console.log('STATUS: ' + apiRes.statusCode);
+    console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
+    apiRes.setEncoding('utf8');
+    apiRes.on('data', function (chunk) {
+      var err;
+      var responseData = JSON.parse(chunk);
+      if (apiReq.statusCode !== 200) {
+        err = responseData.message;
+      }
+      console.log(responseData);
+      renderHomepage(req, res, responseData, err);
+    });
+  });
+
+  apiReq.on('error', function(e) {
+    console.log('problem with request: ' + e.message);
+  });
+  apiReq.end();
+
 };
 
 /* GET 'Location info' page */
