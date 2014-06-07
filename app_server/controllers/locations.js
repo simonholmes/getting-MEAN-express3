@@ -52,7 +52,7 @@ var renderHomepage = function (req, res, locations, err) {
 /* GET 'home' page */
 module.exports.homelist = function(req, res){
   var apiReq;
-  apiOptions.path = '/api/locations?lng=-0.7992599&lat=51.378091&maxDistance=2';
+  apiOptions.path = '/api/locations?lng=-0.7992599&lat=51.378091&maxDistance=20';
   apiOptions.method = 'GET';
   apiReq = http.request(apiOptions, function(apiRes) {
     console.log('STATUS: ' + apiRes.statusCode);
