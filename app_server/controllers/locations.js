@@ -1,14 +1,17 @@
 var http = require('http');
+var request = require('request');
 var apiOptions = {
+  protocol: "http",
   host: 'localhost',
   port: 3000
 };
 if (process.env.NODE_ENV === 'production') {
+  apiOptions.protocol = "https";
   apiOptions.host = 'getting-mean-loc8r.herokuapp.com';
   apiOptions.port = 80;
 }
 
-var formatDistance = function (distance) {
+var _formatDistance = function (distance) {
   var numDistance, unit;
   if (distance > 1) {
     numDistance = distance.toFixed(1);
@@ -20,17 +23,36 @@ var formatDistance = function (distance) {
   return numDistance + unit;
 };
 
+var _showError = function (req, res, status) {
+  var title, content;
+  if (status === 404) {
+    title = "404, page not found";
+    content = "Oh dear. Looks like we can't find this page. Sorry about that.";
+  } else if (status === 500) {
+    title = "500, internal server error";
+    content = "How embarrassing. There's a problem with our server.";
+  } else {
+    title = status + ", something's gone wrong";
+    content = "Something, somewhere, has gone just a little bit wrong.";
+  }
+  res.status(status);
+  res.render('generic-text', {
+    title : title,
+    content : content
+  });
+};
+
 var renderHomepage = function (req, res, locations, err) {
   var message, locationData, locationCount, i;
-  if (err) {
+  if (err || !(locations instanceof Array)) {
     locationData = [];
-    message = "API error: " + err;
+    message = "API lookup error";
   } else {
     locationData = locations;
     locationCount = locationData.length;
     if (locationCount > 0) {
       for (i=0; i<locationCount; i++) {
-        locationData[i].distance = formatDistance(locationData[i].distance);
+        locationData[i].distance = _formatDistance(locationData[i].distance);
       }
     } else {
       message = "No places found nearby";
@@ -51,82 +73,157 @@ var renderHomepage = function (req, res, locations, err) {
 
 /* GET 'home' page */
 module.exports.homelist = function(req, res){
+  var requestOptions;
+  apiOptions.path = '/api/locations';
+  requestOptions = {
+    url : apiOptions.protocol + '://' + apiOptions.host + ':' + apiOptions.port + apiOptions.path,
+    method : "GET",
+    json : {},
+    qs : {
+      lng : -0.7992599,
+      lat : 51.378091,
+      maxDistance : 20
+    }
+  };
+  request(
+    requestOptions,
+    function(err, response, body) {
+      if (response.statusCode === 200) {
+        renderHomepage(req, res, body);
+      } else if (response.statusCode === 404) {
+        renderHomepage(req, res, null, 404);
+      } else {
+        _showError(500);
+      }
+    }
+  );
+
+
+  // apiReq = http.request(apiOptions, function(apiRes) {
+  //   console.log('STATUS: ' + apiRes.statusCode);
+  //   console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
+  //   apiRes.setEncoding('utf8');
+  //   apiRes.on('data', function (chunk) {
+  //     var err, responseData;
+  //     responseData = JSON.parse(chunk);
+  //     if (apiRes.statusCode !== 200) {
+  //       err = responseData.message;
+  //     }
+  //     console.log(responseData);
+  //     renderHomepage(req, res, responseData, err);
+  //   });
+  // });
+
+  // apiReq.on('error', function(e) {
+  //   console.log('problem with request: ' + e.message);
+  //   _showError(req, res, 500);
+  // });
+
+  // apiReq.end();
+
+};
+
+var getLocationInfo = function (req, res, callback) {
   var apiReq;
-  apiOptions.path = '/api/locations?lng=-0.7992599&lat=51.378091&maxDistance=20';
+  apiOptions.path = '/api/locations/' + req.params.locationid;
   apiOptions.method = 'GET';
   apiReq = http.request(apiOptions, function(apiRes) {
     console.log('STATUS: ' + apiRes.statusCode);
     console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
     apiRes.setEncoding('utf8');
     apiRes.on('data', function (chunk) {
-      var err;
-      var responseData = JSON.parse(chunk);
-      if (apiReq.statusCode !== 200) {
-        err = responseData.message;
-      }
+      var err, responseData;
+      responseData = JSON.parse(chunk);
       console.log(responseData);
-      renderHomepage(req, res, responseData, err);
+      if (apiRes.statusCode === 200) {
+        callback(req, res, responseData);
+      } else {
+        err = responseData.message;
+        _showError(req, res, 404);
+      }
     });
   });
 
   apiReq.on('error', function(e) {
     console.log('problem with request: ' + e.message);
+    _showError(req, res, 500);
   });
   apiReq.end();
-
 };
 
-/* GET 'Location info' page */
-module.exports.locationInfo = function(req, res){
+var renderDetailPage = function (req, res, locDetail) {
   res.render('location-info', {
-    title: 'Starcups',
-    pageHeader: {title: 'Starcups'},
+    title: locDetail.name,
+    pageHeader: {title: locDetail.name},
     sidebar: {
       context: 'is on Loc8r because it has accessible wifi and space to sit down with your laptop and get some work done.',
       callToAction: 'If you\'ve been and you like it - or if you don\'t - please leave a review to help other people just like you.'
     },
     location: {
-      name: 'Starcups',
-      address: '125 High Street, Reading, RG6 1PS',
-      rating: 3,
-      facilities: ['Hot drinks', 'Food', 'Premium wifi'],
-      coords: {lat: 51.455041, lng: -0.9690884},
-      openingTimes: [{
-        days: 'Monday - Friday',
-        opening: '7:00am',
-        closing: '7:00pm',
-        closed: false
-      },{
-        days: 'Saturday',
-        opening: '8:00am',
-        closing: '5:00pm',
-        closed: false
-      },{
-        days: 'Sunday',
-        closed: true
-      }],
-      reviews: [{
-        author: 'Simon Holmes',
-        rating: 5,
-        timestamp: '16 July 2013',
-        reviewText: 'What a great place. I can\'t say enough good things about it.'
-      },{
-        author: 'Charlie Chaplin',
-        rating: 3,
-        timestamp: '16 June 2013',
-        reviewText: 'It was okay. Coffee wasn\'t great, but the wifi was fast.'
-      }]
+      id: locDetail._id,
+      name: locDetail.name,
+      address: locDetail.address,
+      rating: locDetail.rating,
+      facilities: locDetail.facilities,
+      coords: {lat: locDetail.coords[1], lng: locDetail.coords[0]},
+      openingTimes: locDetail.openingTimes,
+      reviews: locDetail.reviews
+    }
+  });
+};
+
+/* GET 'Location info' page */
+module.exports.locationInfo = function(req, res){
+  getLocationInfo(req, res, function(req, res, responseData) {
+    renderDetailPage(req, res, responseData);
+  });
+};
+
+var renderReviewForm = function (req, res, locDetail) {
+  res.render('location-review-form', {
+    title: 'Review ' + locDetail.name + ' on Loc8r',
+    pageHeader: { title: 'Review ' + locDetail.name },
+    user: {
+      displayName: "Simon Holmes"
     }
   });
 };
 
 /* GET 'Add review' page */
 module.exports.addReview = function(req, res){
-  res.render('location-review-form', {
-    title: 'Review Starcups on Loc8r',
-    pageHeader: { title: 'Review Starcups' },
-    user: {
-      displayName: "Simon Holmes"
-    }
+  getLocationInfo(req, res, function(req, res, responseData) {
+    renderReviewForm(req, res, responseData);
   });
 };
+
+/* POST 'Add review' page */
+module.exports.doAddReview = function(req, res){
+  var apiReq;
+  var locationid = req.params.locationid;
+  apiOptions.path = '/api/locations/' + locationid + '/reviews';
+  apiOptions.method = 'POST';
+  apiOptions.body = req.body;
+  apiReq = http.request(apiOptions, function(apiRes) {
+    console.log('STATUS: ' + apiRes.statusCode);
+    console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
+    apiRes.setEncoding('utf8');
+    apiRes.on('data', function (chunk) {
+      var err, responseData;
+      responseData = JSON.parse(chunk);
+      console.log(responseData);
+      if (apiRes.statusCode === 201) {
+        res.redirect('/location/' + locationid);
+      } else {
+        err = responseData.message;
+        _showError(req, res, apiRes.statusCode);
+      }
+    });
+  });
+
+  apiReq.on('error', function(e) {
+    console.log('problem with request: ' + e.message);
+    _showError(req, res, 500);
+  });
+  apiReq.end();
+};
+
