@@ -1,14 +1,10 @@
 var http = require('http');
 var request = require('request');
 var apiOptions = {
-  protocol: "http",
-  host: 'localhost',
-  port: 3000
+  server : "http://localhost:3000"
 };
 if (process.env.NODE_ENV === 'production') {
-  apiOptions.protocol = "https";
-  apiOptions.host = 'getting-mean-loc8r.herokuapp.com';
-  apiOptions.port = 80;
+  apiOptions.server = "https://getting-mean-loc8r.herokuapp.com";
 }
 
 var _formatDistance = function (distance) {
@@ -73,10 +69,10 @@ var renderHomepage = function (req, res, locations, err) {
 
 /* GET 'home' page */
 module.exports.homelist = function(req, res){
-  var requestOptions;
-  apiOptions.path = '/api/locations';
+  var requestOptions, path;
+  path = '/api/locations';
   requestOptions = {
-    url : apiOptions.protocol + '://' + apiOptions.host + ':' + apiOptions.port + apiOptions.path,
+    url : apiOptions.server + path,
     method : "GET",
     json : {},
     qs : {
@@ -97,58 +93,26 @@ module.exports.homelist = function(req, res){
       }
     }
   );
-
-
-  // apiReq = http.request(apiOptions, function(apiRes) {
-  //   console.log('STATUS: ' + apiRes.statusCode);
-  //   console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
-  //   apiRes.setEncoding('utf8');
-  //   apiRes.on('data', function (chunk) {
-  //     var err, responseData;
-  //     responseData = JSON.parse(chunk);
-  //     if (apiRes.statusCode !== 200) {
-  //       err = responseData.message;
-  //     }
-  //     console.log(responseData);
-  //     renderHomepage(req, res, responseData, err);
-  //   });
-  // });
-
-  // apiReq.on('error', function(e) {
-  //   console.log('problem with request: ' + e.message);
-  //   _showError(req, res, 500);
-  // });
-
-  // apiReq.end();
-
 };
 
 var getLocationInfo = function (req, res, callback) {
-  var apiReq;
-  apiOptions.path = '/api/locations/' + req.params.locationid;
-  apiOptions.method = 'GET';
-  apiReq = http.request(apiOptions, function(apiRes) {
-    console.log('STATUS: ' + apiRes.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
-    apiRes.setEncoding('utf8');
-    apiRes.on('data', function (chunk) {
-      var err, responseData;
-      responseData = JSON.parse(chunk);
-      console.log(responseData);
-      if (apiRes.statusCode === 200) {
-        callback(req, res, responseData);
+  var requestOptions, path;
+  path = "/api/locations/" + req.params.locationid;
+  requestOptions = {
+    url : apiOptions.server + path,
+    method : "GET",
+    json : {},
+  };
+  request(
+    requestOptions,
+    function(err, response, body) {
+      if (response.statusCode === 200) {
+        callback(req, res, body);
       } else {
-        err = responseData.message;
-        _showError(req, res, 404);
+        renderHomepage(req, res, null, 404);
       }
-    });
-  });
-
-  apiReq.on('error', function(e) {
-    console.log('problem with request: ' + e.message);
-    _showError(req, res, 500);
-  });
-  apiReq.end();
+    }
+  );
 };
 
 var renderDetailPage = function (req, res, locDetail) {
@@ -198,32 +162,29 @@ module.exports.addReview = function(req, res){
 
 /* POST 'Add review' page */
 module.exports.doAddReview = function(req, res){
-  var apiReq;
-  var locationid = req.params.locationid;
-  apiOptions.path = '/api/locations/' + locationid + '/reviews';
-  apiOptions.method = 'POST';
-  apiOptions.body = req.body;
-  apiReq = http.request(apiOptions, function(apiRes) {
-    console.log('STATUS: ' + apiRes.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(apiRes.headers));
-    apiRes.setEncoding('utf8');
-    apiRes.on('data', function (chunk) {
-      var err, responseData;
-      responseData = JSON.parse(chunk);
-      console.log(responseData);
-      if (apiRes.statusCode === 201) {
+  var requestOptions, path, locationid, postdata;
+  locationid = req.params.locationid;
+  path = "/api/locations/" + locationid + '/reviews';
+  postdata = {
+    author: req.body.name,
+    rating: parseInt(req.body.rating, 10),
+    reviewText: req.body.review
+  };
+  requestOptions = {
+    url : apiOptions.server + path,
+    method : "POST",
+    json : postdata,
+  };
+  request(
+    requestOptions,
+    function(err, response, body) {
+      if (response.statusCode === 201) {
         res.redirect('/location/' + locationid);
       } else {
-        err = responseData.message;
-        _showError(req, res, apiRes.statusCode);
+        _showError(req, res, response.statusCode);
       }
-    });
-  });
-
-  apiReq.on('error', function(e) {
-    console.log('problem with request: ' + e.message);
-    _showError(req, res, 500);
-  });
-  apiReq.end();
+    }
+  );
 };
+
 
