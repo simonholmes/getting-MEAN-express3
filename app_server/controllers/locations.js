@@ -1,4 +1,3 @@
-var http = require('http');
 var request = require('request');
 var apiOptions = {
   server : "http://localhost:3000"
@@ -7,16 +6,24 @@ if (process.env.NODE_ENV === 'production') {
   apiOptions.server = "https://getting-mean-loc8r.herokuapp.com";
 }
 
+var _isNumeric = function (n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+};
+
 var _formatDistance = function (distance) {
   var numDistance, unit;
-  if (distance > 1) {
-    numDistance = distance.toFixed(1);
-    unit = 'km';
+  if (distance && _isNumeric(distance)) {
+    if (distance > 1) {
+      numDistance = distance.toFixed(1);
+      unit = 'km';
+    } else {
+      numDistance = parseInt(distance * 1000,10);
+      unit = 'm';
+    }
+    return numDistance + unit;
   } else {
-    numDistance = parseInt(distance * 1000,10);
-    unit = 'm';
+    return "?";
   }
-  return numDistance + unit;
 };
 
 var _showError = function (req, res, status) {
@@ -38,19 +45,13 @@ var _showError = function (req, res, status) {
   });
 };
 
-var renderHomepage = function (req, res, locations, err) {
-  var message, locationData, locationCount, i;
-  if (err || !(locations instanceof Array)) {
-    locationData = [];
+var renderHomepage = function(req, res, responseBody){
+  var message;
+  if (!(responseBody instanceof Array)) {
     message = "API lookup error";
+    responseBody = [];
   } else {
-    locationData = locations;
-    locationCount = locationData.length;
-    if (locationCount > 0) {
-      for (i=0; i<locationCount; i++) {
-        locationData[i].distance = _formatDistance(locationData[i].distance);
-      }
-    } else {
+    if (!responseBody.length) {
       message = "No places found nearby";
     }
   }
@@ -61,10 +62,9 @@ var renderHomepage = function (req, res, locations, err) {
       strapline: 'Find places to work with wifi near you!'
     },
     sidebar: "Looking for wifi and a seat? Loc8r helps you find places to work when out and about. Perhaps with coffee, cake or a pint? Let Loc8r help you find the place you're looking for.",
-    locations: locationData,
+    locations: responseBody,
     message: message
   });
-
 };
 
 /* GET 'home' page */
@@ -84,13 +84,14 @@ module.exports.homelist = function(req, res){
   request(
     requestOptions,
     function(err, response, body) {
-      if (response.statusCode === 200) {
-        renderHomepage(req, res, body);
-      } else if (response.statusCode === 404) {
-        renderHomepage(req, res, null, 404);
-      } else {
-        _showError(500);
+      var i, data;
+      data = body;
+      if (response.statusCode === 200 && data.length) {
+        for (i=0; i<data.length; i++) {
+          data[i].distance = _formatDistance(data[i].distance);
+        }
       }
+      renderHomepage(req, res, data);
     }
   );
 };
@@ -101,7 +102,7 @@ var getLocationInfo = function (req, res, callback) {
   requestOptions = {
     url : apiOptions.server + path,
     method : "GET",
-    json : {},
+    json : {}
   };
   request(
     requestOptions,
@@ -109,7 +110,7 @@ var getLocationInfo = function (req, res, callback) {
       if (response.statusCode === 200) {
         callback(req, res, body);
       } else {
-        renderHomepage(req, res, null, 404);
+        _showError(req, res, 404);
       }
     }
   );
@@ -173,7 +174,7 @@ module.exports.doAddReview = function(req, res){
   requestOptions = {
     url : apiOptions.server + path,
     method : "POST",
-    json : postdata,
+    json : postdata
   };
   request(
     requestOptions,
