@@ -19,6 +19,7 @@ var theEarth = (function(){
 })();
 
 var sendJSONresponse = function(res, status, content) {
+  console.log(content);
   res.status(status);
   res.json(content);
 };
@@ -42,7 +43,7 @@ module.exports.locationsListByDistance = function(req, res) {
     maxDistance: theEarth.getRadsFromDistance(maxDistance),
     num: 10
   };
-  if (!lng || !lat || ! maxDistance) {
+  if ((!lng && lng!==0) || (!lat && lat!==0) || ! maxDistance) {
     console.log('locationsListByDistance missing params');
     sendJSONresponse(res, 404, {"message" : "lng, lat and maxDistance query parameters are all required"});
     return;
@@ -245,6 +246,7 @@ var doAddReview = function(req, res, location) {
     location.save(function(err, location) {
       var thisReview;
       if (err) {
+        console.log(err);
         sendJSONresponse(res, 400, err);
       } else {
         updateAverageRating(location._id);

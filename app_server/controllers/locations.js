@@ -30,7 +30,7 @@ var _showError = function (req, res, status) {
   var title, content;
   if (status === 404) {
     title = "404, page not found";
-    content = "Oh dear. Looks like we can't find this page. Sorry about that.";
+    content = "Oh dear. Looks like we can't find this page. Sorry.";
   } else if (status === 500) {
     title = "500, internal server error";
     content = "How embarrassing. There's a problem with our server.";
@@ -107,10 +107,15 @@ var getLocationInfo = function (req, res, callback) {
   request(
     requestOptions,
     function(err, response, body) {
+      var data = body;
       if (response.statusCode === 200) {
-        callback(req, res, body);
+        data.coords = {
+          lng : body.coords[0],
+          lat : body.coords[1]
+        };
+        callback(req, res, data);
       } else {
-        _showError(req, res, 404);
+        _showError(req, res, response.statusCode);
       }
     }
   );
@@ -124,16 +129,7 @@ var renderDetailPage = function (req, res, locDetail) {
       context: 'is on Loc8r because it has accessible wifi and space to sit down with your laptop and get some work done.',
       callToAction: 'If you\'ve been and you like it - or if you don\'t - please leave a review to help other people just like you.'
     },
-    location: {
-      id: locDetail._id,
-      name: locDetail.name,
-      address: locDetail.address,
-      rating: locDetail.rating,
-      facilities: locDetail.facilities,
-      coords: {lat: locDetail.coords[1], lng: locDetail.coords[0]},
-      openingTimes: locDetail.openingTimes,
-      reviews: locDetail.reviews
-    }
+    location: locDetail
   });
 };
 
@@ -150,7 +146,8 @@ var renderReviewForm = function (req, res, locDetail) {
     pageHeader: { title: 'Review ' + locDetail.name },
     user: {
       displayName: "Simon Holmes"
-    }
+    },
+    error: req.query.err
   });
 };
 
@@ -176,16 +173,23 @@ module.exports.doAddReview = function(req, res){
     method : "POST",
     json : postdata
   };
-  request(
-    requestOptions,
-    function(err, response, body) {
-      if (response.statusCode === 201) {
-        res.redirect('/location/' + locationid);
-      } else {
-        _showError(req, res, response.statusCode);
+  if (!postdata.author || !postdata.rating || !postdata.reviewText) {
+    res.redirect('/location/' + locationid + '/reviews/new?err=val');
+  } else {
+    request(
+      requestOptions,
+      function(err, response, body) {
+        if (response.statusCode === 201) {
+          res.redirect('/location/' + locationid);
+        } else if (response.statusCode === 400 && body.name && body.name === "ValidationError" ) {
+          res.redirect('/location/' + locationid + '/reviews/new?err=val');
+        } else {
+          console.log(body);
+          _showError(req, res, response.statusCode);
+        }
       }
-    }
-  );
+    );
+  }
 };
 
 
