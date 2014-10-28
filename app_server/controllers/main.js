@@ -11,3 +11,7 @@ module.exports.signin = function(req, res){
   res.render('signin-index', { title: 'Sign in to Loc8r' });
 };
 
+/* GET Angular SPA page */
+module.exports.angularApp = function(req, res){
+  res.render('layout', { title: 'Loc8r' });
+};

@@ -17,6 +17,7 @@ app.use(express.cookieParser('your secret here'));
 // app.use(express.session());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'app_client')));
 
 // development only
 if ('development' == app.get('env')) {
