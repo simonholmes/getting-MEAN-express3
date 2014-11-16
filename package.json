@@ -1,5 +1,5 @@
 {
-  "name": "Loc8r",
+  "name": "loc8r",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -13,6 +13,7 @@
     "express": "3.4.x",
     "jade": "*",
     "mongoose": "3.8.x",
-    "request": "2.36.x"
+    "request": "2.36.x",
+    "uglify-js": "~2.4.15"
   }
 }

@@ -17,7 +17,7 @@ html(ng-app='loc8rApp')
         #navbar-main.navbar-collapse.collapse
           ul.nav.navbar-nav
             li
-              a(href='/about/') About
+              a(href='/#about/') About
           ul.nav.navbar-nav.navbar-right
             li
               a(href='/signin/') Sign in
@@ -32,12 +32,13 @@ html(ng-app='loc8rApp')
             small &copy; Simon Holmes 2014
     script(src='/angular/angular.min.js')
     script(src='/lib/angular-route.min.js')
-    script(src='/app.js')
-    script(src='/common/services/loc8rData.service.js')
-    script(src='/common/services/geolocation.service.js')
-    script(src='/common/directives/ratingStars/ratingStars.directive.js')
-    script(src='/common/filters/formatDistance.filter.js')
-    script(src='/home/home.controller.js')
+    script(src='/angular/loc8r.min.js')
+    //- script(src='/app.js')
+    //- script(src='/common/services/loc8rData.service.js')
+    //- script(src='/common/services/geolocation.service.js')
+    //- script(src='/common/directives/ratingStars/ratingStars.directive.js')
+    //- script(src='/common/filters/formatDistance.filter.js')
+    //- script(src='/home/home.controller.js')
     script(src='//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js')
     script(src='/bootstrap/js/bootstrap.min.js')
     script(src='/javascript/validation.js')
