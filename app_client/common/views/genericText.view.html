@@ -1,0 +1,16 @@
+<div id="banner" class="page-header">
+  <div class="row">
+    <div class="col-lg-6"></div>
+      <h1>
+        {{ vm.pageHeader.title }}
+       <small>{{ vm.pageHeader.strapline }}</small>
+      </h1>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-sm-12">
+    <!-- <p>{{ vm.main.content | addHtmlLineBreaks }}</p> -->
+    <p ng-bind-html="vm.main.content | addHtmlLineBreaks"></p>
+  </div>
+</div>
