@@ -14,3 +14,4 @@ There are named branches for the various states of the code throughout the book,
 * `chapter-05` **Chapter 5**: Building a data model with MongoDB and Mongoose
 * `chapter-06` **Chapter 6**: Writing a REST API: Exposing your MongoDB database to the application
 * `chapter-07` **Chapter 7**: Consuming a REST API: Using an API from inside Express
+* `chapter-08` **Chapter 8**: Adding Angular components to an Express application
