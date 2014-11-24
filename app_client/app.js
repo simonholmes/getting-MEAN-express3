@@ -14,6 +14,11 @@
         controller: 'aboutCtrl',
         controllerAs: 'vm'
       })
+      .when('/location/:locationid', {
+        templateUrl: 'locationDetail/locationDetail.view.html',
+        controller: 'locationDetailCtrl',
+        controllerAs: 'vm'
+      })
       .otherwise({redirectTo: '/'});
   }
 
