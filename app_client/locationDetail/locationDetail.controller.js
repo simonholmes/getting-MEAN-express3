@@ -20,22 +20,19 @@
         console.log(e);
       });
 
-
     vm.popupReviewForm = function () {
-      alert("Let's add a review!");
-      // var modalInstance = $modal.open({
-      //   templateUrl: 'review-modal/review-modal.view.html',
-      //   controller: 'reviewModalCtrl as vm',
-      //   // controllerAs: 'vm'  // AngularUI bug prevents this from working
-      //   resolve : {
-      //     locationid : function () {
-      //       return vm.locationid;
-      //     },
-      //     locationName : function () {
-      //       return vm.data.location.name;
-      //     }
-      //   }
-      // });
+      var modalInstance = $modal.open({
+        templateUrl: '/reviewModal/reviewModal.view.html',
+        controller: 'reviewModalCtrl as vm',
+        resolve : {
+          locationData : function () {
+            return {
+              locationid : vm.locationid,
+              locationName : vm.data.location.name
+            };
+          }
+        }
+      });
 
       // modalInstance.result.then(function (data) {
       //   vm.data.location.reviews.push(data);
