@@ -34,11 +34,11 @@
         }
       });
 
-      // modalInstance.result.then(function (data) {
-      //   vm.data.location.reviews.push(data);
-      // });
-
+      modalInstance.result.then(function (data) {
+        vm.data.location.reviews.push(data);
+      });
     };
+
   }
 
 })();

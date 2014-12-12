@@ -5,6 +5,7 @@
       <h4 id="myModalLabel" class="modal-title">Add your review for {{ vm.locationData.locationName }}</h4>
     </div>
     <div class="modal-body">
+      <div role="alert" ng-show="vm.formError" class="alert alert-danger">{{ vm.formError }}</div>
       <div class="form-group">
         <label for="name" class="col-xs-2 col-sm-2 control-label">Name</label>
         <div class="col-xs-10 col-sm-10">
