@@ -32,7 +32,7 @@ fs.writeFile('public/angular/loc8r.min.js', uglified.code, function (err){
   if(err) {
     console.log(err);
   } else {
-    console.log("Script generated and saved:", 'loc8r.min.js');
+    console.log('Script generated and saved: loc8r.min.js');
   }
 });
 
